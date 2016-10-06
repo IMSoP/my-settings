@@ -1,0 +1,4 @@
+--smart-case
+--type-set=tpl=.tpl
+--type-add=php=.inc
+--type-add=css=.less

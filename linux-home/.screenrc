@@ -1,0 +1,2 @@
+escape ^Ss
+termcapinfo xterm* ti@:te@
