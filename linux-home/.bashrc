@@ -4,25 +4,81 @@
 
 case $- in
 *i*)    # interactive mode only
-	# show return status $? and number of jobs \j in prompt
-	export PS1='$(RET=$?; if [ $RET == 0 ]; then echo "\[\033[1;30m\]$RET"; else echo "\[\033[0;31m\]$RET"; fi;) \[\033[1;32m\]\u@\h $(if [ "$PSWARN" ]; then echo "\[\033[1;31m\]$PSWARN"; fi;)\[\033[1;34m\]\w $(if [ \j != 0 ]; then echo "\[\033[0;33m\]\j \[\033[1;34m\]"; fi;)\$$(if [ $TERM = "screen" ]; then echo \$; fi;)\[\033[00m\] '
-	export HISTCONTROL='ignoredups:erasedups'
-	export HISTTIMEFORMAT='(%Y-%m-%d %H:%M:%S)  '
-
-	stty stop '' # disable that annoying Ctrl-S
-	stty start '' # in which case Ctrl-Q is kinda useless
-	bind "set completion-ignore-case on" # Thanks Tristan
-	
-	# Weird hackaroo for "SSH here" Windows thingy
-	if ( [ -e .nextdir.tmp ] )
-	then
-		cd `cat .nextdir.tmp`;
-		rm -f ~/.nextdir.tmp;
-	fi;
+	# (everything)
 ;;
 *)      # non-interactive script
+	return 0;
 ;;
 esac
+
+export PROMPT_COMMAND=__update_prompt
+export HISTCONTROL='ignoredups:erasedups'
+export HISTTIMEFORMAT='(%Y-%m-%d %H:%M:%S)  '
+
+stty stop '' # disable that annoying Ctrl-S
+stty start '' # in which case Ctrl-Q is kinda useless
+bind "set completion-ignore-case on" # Thanks Tristan
+
+# Weird hackaroo for "SSH here" Windows thingy
+if ( [ -e .nextdir.tmp ] )
+then
+	cd `cat .nextdir.tmp`;
+	rm -f ~/.nextdir.tmp;
+fi;
+
+FMT_BLACK="$(tput setaf 0)"
+FMT_RED="$(tput setaf 1)"
+FMT_GREEN="$(tput setaf 2)"
+FMT_YELLOW="$(tput setaf 3)"
+FMT_BLUE="$(tput setaf 4)"
+FMT_MAGENTA="$(tput setaf 5)"
+FMT_CYAN="$(tput setaf 6)"
+FMT_WHITE="$(tput setaf 7)"
+FMT_GRAY="$(tput setaf 8)"
+FMT_BRIGHT="$(tput bold)"
+FMT_UNDERLINE="$(tput sgr 0 1)"
+FMT_INVERT="$(tput sgr 1 0)"
+FMT_RESET="$(tput sgr0)"
+
+__update_prompt() {
+	local RET=$?
+
+	local git_branch=''
+	if [ "$(git rev-parse --is-inside-work-tree 2> /dev/null)" = "true" ];
+	then
+		# check for what branch we're on. (fast)
+		#   if… HEAD isn’t a symbolic ref (typical branch),
+		#   then… get a tracking remote branch or tag
+		#   otherwise… get the short SHA for the latest commit
+		#   lastly just give up.
+		# TODO It would be useful to overload this for e.g. `git pr`
+		git_branch="$( git symbolic-ref --quiet --short HEAD 2> /dev/null || git describe --all --exact-match HEAD 2> /dev/null || git rev-parse --short HEAD 2> /dev/null || echo '?' )"
+	fi
+	
+	export PS1='$(RET=$?; if [ $RET == 0 ]; then echo "\[\033[1;30m\]$RET"; else echo "\[\033[0;31m\]$RET"; fi;) \[\033[1;32m\]\u@\h $(if [ "$PSWARN" ]; then echo "\[\033[1;31m\]$PSWARN"; fi;)\[\033[1;34m\]\w $(if [ \j != 0 ]; then echo "\[\033[0;33m\]\j \[\033[1;34m\]"; fi;)\$$(if [ $TERM = "screen" ]; then echo \$; fi;)\[\033[00m\] '
+
+# 	PS1="$FMT_BRIGHT$FMT_GREEN\u@\h$FMT_RESET"
+# 	if [ $RET == 0 ];
+# 	then 
+# 		PS1="$FMT_BRIGHT$FMT_BLACK$RET$FMT_RESET $PS1"
+# 	else
+# 		PS1="$FMT_RED$RET$FMT_RESET $PS1"
+# 	fi
+# 	if [ "$PSWARN" ];
+# 	then
+# 		PS1="$PS1 $FMT_BRIGHT$FMT_RED$PSWARN$FMT_RESET"
+# 	else
+# 		PS1="$PS1 "
+# 	fi
+# 	PS1="$PS1$FMT_BRIGHT$FMT_BLUE\w$FMT_RESET"
+# 	if [ "$git_branch" ];
+# 	then
+# 		PS1="$PS1 $FMT_BRIGHT$FMT_BLACK$git_branch$FMT_RESET"
+# 	fi
+# 	# This one is inlined in PS1 to get access to the \j magic for number of jobs
+# 	PS1="$PS1\$(if [ \j != 0 ]; then echo \" $FMT_YELLOW\j$FMT_RESET\"; fi)"
+# 	PS1="$PS1 $FMT_BRIGHT$FMT_BLUE\$$FMT_RESET "
+}
 
 #
 ## Bash and environment setup
@@ -39,6 +95,14 @@ export EDITOR='/usr/bin/vim'
 
 # Pick up any commands in my home directory
 [ -d ~/bin ] && PATH=$PATH:~/bin 
+
+
+# which appears to be broken on this server :|
+unalias which &>/dev/null
+
+# vi and vim are bound to different versions
+alias vi='vim'
+alias view='vim -R'
 
 #
 ## A few abbrevs for common commands
@@ -57,10 +121,16 @@ alias h='history'
 alias s='if [ $TERM != "screen" ]; then exec screen -xR; fi'
 # like 'cat' for small files, 'less' for big ones
 alias les='less -FX'
+# For long running commands: time it, and capture the output somewhere
+t() { time $@ | tee /tmp/loshg; }
 # I keep forgetting what this bloody command is called!
 # alias ftp='ncftp'
 
 alias today="date +'%Y-%m-%d'"
+
+# make a directory and cd into it
+mcd() { mkdir $1 && cd $1; }
+alias mcdtoday='mcd $(today)'
 
 alias nononsense='egrep -v "nbproject|~\$|Thumbs.db|\.marks$|^\.#|^#.*#\$|\.swp|\.bak\$"'
 alias leaders='sort | uniq -c | sort -n | tail '
@@ -121,6 +191,7 @@ alias vman="MANPAGER=\"col -b | view -c 'set ft=man nomod nolist' -\" man "
 
 # Make folder happy for webserver
 chapache() { chmod -R 770 $*; chgrp -R apache $*; }
+suchapache() { sudo chmod -R 770 $*; sudo chgrp -R apache $*; }
 chwww() { chmod -R 770 $*; chgrp -R www-data $*; }
 suchwww() { sudo chmod -R 770 $*; sudo chgrp -R www-data $*; }
 # View today's logs for a site (e.g. `logview NCL`, `logview NCL tailf`)
@@ -173,8 +244,8 @@ winpath() { echo $(slashes ${1/#\\\\$(hostname)//home}); }
 # Move to a directory with a similar name to the current one: e.g. `editdir 1.2 1.2-staging`
 editdir() { cd ${PWD/$1/$2}; }
 
-# Convert a Unix timestamp to something more readable
-udate() { php -r "echo date('Y-m-d H:i:s', $1);"; echo; }
+# Convert a Unix timestamp to something more readable; or vice versa
+udate() { php -r "date_default_timezone_set('UTC'); \$input = '$1'; if ( ctype_digit(\$input) ) { echo date('Y-m-d H:i:s', \$input); } else { echo strtotime(\$input); }"; echo; }
 
 # Check which server a site's on (e.g. `checkserver designertravel.co.uk`)
 whichserver() { ssh -o 'UserKnownHostsFile /dev/null' -o 'StrictHostKeyChecking no' -o 'ConnectTimeout 5' -o 'PreferredAuthentications publickey' $1 'hostname' 2>/dev/null; }  
@@ -203,39 +274,59 @@ plgrep() { perl -ne "m#$1#i and print '$2' ? \"$2\\n\" : \$_;"; }
 plgrepall() { perl -ne "@m = m#$1#gi and print (join '$2' ? \"$2\" : \"\\n\", @m) and print \"\\n\";"; }
 
 # Send myself (or someone else) an e-mail from a pipe; e.g. `echo hello | phmail 'Note to self'`
-phmail() { php -r 'mail($argv[1], $argv[2], file_get_contents("php://stdin"));' "${2:-$(whoami)+cmdline@clickwt.com}" "${1:-Command-Line Mail}"; }
+phmail() { php -r 'list($to, $subject) = $argv; if ( strpos($to, "@") === false ) { list($subject, $to) = $argv; }; mail($to, $subject, file_get_contents("php://stdin"));' "${2:-$(whoami)@holidaytaxis.com}" "${1:-Command-Line Mail}"; }
 
 # Grab a single column out of a CSV file, using PHP's fgetcsv() to parse the format
 cutcsv() { php -r 'while($line = fgetcsv(STDIN)) { echo $line[$argv[1]], PHP_EOL; }' $1; }
 
-# Quick'n'dirty XPath grep tool using PHP's SimpleXML - hey, it works!
-xpath()
-{
-	php -r '
-		array_shift ( $argv );
-		if ( $argv[0] == "-t" )
-		{
-			array_shift($argv);
-			$text_only = true;
-		}
-		$expression = $argv[0];
+# I don't know what cut defaults to, but I always want it cut on space
+alias cutsp='cut -d" "'
 
-		$x=simplexml_load_file("php://stdin");
-		$matches = $x->xpath($expression);
-		
-		if (! is_array($matches)) { die(1); }
-		foreach($matches as $node)
-		{
-			if ( $text_only )
-			{
-				echo (string)$node, "\n";
-			}
-			else
-			{
-				echo $node->asXML(), "\n";
-			}
-		}
-	' -- "$1" "$2" "$3" "$4";
+alias stripspace='sed "s/^\s\+//;s/\s\+$//"'
+alias stripspaceandcomments='sed "s/^\s*#//;s/^\s\+//;s/\s\+$//"'
+
+# Quick'n'dirty XPath grep tool using PHP's SimpleXML - hey, it works!
+xpath ()
+{
+    php -r '
+                array_shift ( $argv );
+                if ( $argv[0] == "-t" )
+                {
+                        array_shift($argv);
+                        $text_only = true;
+                }
+                $ns = array(
+                        "soap" => "http://schemas.xmlsoap.org/soap/envelope/"
+                );
+                while ( $argv[0] == "-n" )
+                {
+                        array_shift($argv);
+                        $ns[ array_shift($argv) ] = array_shift($argv);
+                }
+                $expression = $argv[0];
+
+                $x=simplexml_load_file("php://stdin");
+
+                foreach ( $ns as $prefix => $uri )
+                {
+                        $x->registerXpathNamespace($prefix, $uri);
+                }
+
+                $matches = $x->xpath($expression);
+
+                if (! is_array($matches)) { die(1); }
+                foreach($matches as $node)
+                {
+                        if ( $text_only )
+                        {
+                                echo (string)$node, "\n";
+                        }
+                        else
+                        {
+                                echo $node->asXML(), "\n";
+                        }
+                }
+        ' -- "$@"
 }
 
 # Highlight the given regex on stdin; if given, the second argument sets the colour 
@@ -399,8 +490,8 @@ topvers()  { ls -1 $1 | grep -o ^[^-]* | uniq | xargs -i@@ bash -c "ls -1 $1 | g
 
 # Useful variables
 export vhosts=~dev/apache/conf/vhosts.conf
-export myhosts=~dev/apache/conf/users/$(whoami).conf
-export sitehosts=~dev/apache/conf/sites
+export myconf=~dev/apache/conf/users/$(whoami).conf
+export myhosts=~dev/apache/conf/users/$(whoami)/
 
 # Show used ports in file (or $vhosts if none given)
 vhports() { _file=$vhosts; [ $1 ] && _file=$1; egrep -o 'Listen.*' $_file | sort -t' ' -k2n; } 
@@ -546,85 +637,161 @@ bumpdb ()
 # Clear the DB cache for a C2C offer using the awesome power of iPHP (see SVN:scripts/iPHP)
 c2c-uncache() { echo -e '@@common trunk \n @@db_select click2cruise \n @@db update amadeusoffers set lastupdated=0 where offerid =' $1 | i.php -s; }
 
+copybranch() { local who=$1; local what=$2; git remote add $who git@github.com:$who/htx.git; git fetch $who >/dev/null; git push origin $who/$what:refs/heads/$what; }
+addremote() { local who=$1; git remote add $who git@github.com:$who/htx.git; git fetch $who; }
 
-#
-## Subversion bits and tricks
-#
+# set-test() { pushd ~/development/htx-test; git fetch origin; git checkout "origin/$1"; popd; }
+# set-test2() { pushd ~/development/htx-test2; git fetch origin; git checkout "origin/$1"; popd; }
 
-# What's the newest revision in the repository?
-svn_head() { svnlook youngest $SVNFSROOT; }
+set-test-local() {
+	pushd ~/development/htx-test$1 || return 1;
+	git reset --hard;
+	git fetch --prune local;
+	git checkout "local/$2"; 
+	composer install;
+	popd;
+	echo "$(date +'%Y-%m-%d %H:%M') *-htx-test$1-tomminsr.htxdev.com LOCAL:$2" | tee -a ~/development/test-history;
+}
+set-test-github() {
+	pushd ~/development/htx-test$1 || return 1;
+	git reset --hard;
+	git fetch --prune github;
+	git checkout "github/$2"; 
+	composer install;
+	popd;
+	echo "$(date +'%Y-%m-%d %H:%M') *-htx-test$1-tomminsr.htxdev.com GITHUB:$2" | tee -a ~/development/test-history;
+}
+set-test-pr() {
+	pushd ~/development/htx-test$1 || return 1;
+	git reset --hard;
+	git fetch github "pull/$2/head";
+	git checkout FETCH_HEAD; 
+	composer install;
+	popd;
+	echo "$(date +'%Y-%m-%d %H:%M') *-htx-test$1-tomminsr.htxdev.com PR#$2" | tee -a ~/development/test-history;
+}
+set-test-current() {
+	set-test-local $1 $(git pwb)
+}
+alias list-test='for t in 1 2; do grep test$t ~/development/test-history | tail -n1; done'
+alias test-list='for t in 1 2; do grep test$t ~/development/test-history | tail -n1; done'
 
-# How to test all the SVN craziness
-svntest() { SVNROOT=svn+ssh://$(whoami)@svn.cwtdigital.com/home/dev/svn/test; SVNROOT_RO=$SVNROOT; SVNFSROOT=/home/dev/svn/test; SVNCHECKOUT=~/development/test; warn svntest; }
-# BeanStalk
-svntwick() { SVNROOT=https://click-with-technology-ltd.svn.beanstalkapp.com/twickenham; SVNROOT_RO=$SVNROOT; SVNFSROOT=''; SVNCHECKOUT=~/development/twickenham; warn twickenham; }
-# svntest remains in effect until svnlive is run
-svnlive() { SVNROOT=svn+ssh://$(whoami)@svn.cwtdigital.com/home/dev/svn/cwt; SVNROOT_RO=$SVNROOT; SVNFSROOT=/home/dev/svn/test; SVNCHECKOUT=~/development/cwt; nowarn svntest; nowarn twickenham; }
-
-# Update working copy non-interactively, but highlight conflicts
-# svnup() { svn up --accept postpone $1 | highlight '^[CE].+' red | highlight '^G.+' green; }
-
-# Real-time watch of SVN commits
-svnwatch()
-{
-	x=$[ $(svn_head) - 5 ];
-	while(true)
-	do
-		x2=$(svn_head);
-		if ( [[ $x -lt $x2 ]] ) 
-		then
-			svn log -v $SVNROOT -r$[$x+1]:$x2 --incremental;
-			x=$x2;
-		fi;
-		sleep 5;
-	done;
+git-out() {
+	local to_sync=${1:-develop};
+	git fetch --prune origin;
+	git checkout $to_sync;
+	git pull --ff-only origin $to_sync;
+}
+alias gs='git status'
+alias gd='git diff'
+alias gds='git diff --staged'
+alias ga='git add'
+gf() { git fetch --prune ${1:-origin}; }
+git-hist() {
+        git reflog | perl -nE '/checkout: moving from ([^ ]+)/ && say ++$x, ": ", $1;' | les
+}
+git-back() {
+        local steps=${1:-1}
+        local branch=$(git reflog | perl -nE '/checkout: moving from ([^ ]+)/ && say $1;' | head -n $steps | tail -n 1)
+        git checkout $branch
 }
 
-svnrev()
-{
-	local rev=$1; shift;
-	svn log $SVNROOT -c$rev; echo; svn diff $SVNROOT -c$rev --diff-cmd=diff -x'-wu' $*;
+# Enable XDebug for CLI scripts!
+# export XDEBUG_CONFIG="default_enable=1 remote_enable=1 remote_port=9000 remote_connect_back=0 remote_autostart=1 remote_host=${SSH_CLIENT%% *}"
+export XDEBUG_CONFIG="default_enable=1 remote_enable=1 remote_port=9042 remote_connect_back=0 remote_autostart=1 remote_host=localhost"
+
+
+export htxdata=/home/dev/public/HTX/HTXSymLink/HolidayTaxisData
+
+unit-test() {
+	local suite=${1:-*};
+	if [ ${#@} -gt 1 ];
+	then
+		local classes="${@:2}"
+		local config="unit-tests/$suite/phpunit.xml"
+		for class in $classes
+		do
+			vendor/bin/phpunit -c $config unit-tests/$suite/tests/$class
+		done
+	else
+		for config in unit-tests/$suite/phpunit.xml
+		do
+			vendor/bin/phpunit -c $config 
+		done
+	fi
 }
 
-# SVN statistical silliness
-function highscores()
-{
-	clear;
-	svn log -q $SVNROOT -r${1:-0}:${2:-HEAD} | grep -v 'neilk \| 2011-02' | plgrep '\| (\d{4}-\d{2}-\d{2})' '$1' | uniq -c | sort -rn | php -B $'
-		$RED    = exec("tput setaf 1");
-		$GREEN  = exec("tput setaf 2");
-		$YELLOW = exec("tput setaf 3");
-		$BLUE   = exec("tput setaf 4");
-		$MAGENTA= exec("tput setaf 5");
-		$CYAN   = exec("tput setaf 6");
-		$WHITE  = exec("tput setaf 7");
-		$BGRED  = exec("tput setab 1");
-		$RESET  = exec("echo -ne \'\e[m\'");
-	' -R $'
-		list($n,$d)=preg_split(\'/\s+/\', trim($argn), 2);
-		$ago=abs(intval( (strtotime($d) - time()) / (24*60*60) ));
-		$weekday=date("D", strtotime($d));
-		if ($prev && $n != $prev) { $rank++; printf("#%2d   %2d   %s\n", $rank, $prev, $line); $line=""; $line_length=0;} 
-		if( $line_length > 8 ) { $d="+"; }
-		if( $ago==0 ){ $d="$GREEN$d$RESET"; }
-			elseif( $ago<=20 ){ $d="$CYAN$d$RESET"; }
-			elseif( $ago<=100 ){ $d="$YELLOW$d$RESET"; }
-		if( $weekday=="Sat" || $weekday=="Sun" ){ $d="$BGRED$d$RESET"; }
-		$line.="$d "; $line_length++; $prev=$n;
-	' -E '$rank++; printf("#%2d   %2d   %s\n", $rank, $n, $line);' | les;
+
+# Just for fun
+taglist() {
+	git fetch origin --tags;
+	# git tag | grep -Eo '[0-9].*' | sort -V | perl -ne '($v,$s)=/(\d+\.\d+)(.*)/; $s = "-" unless $s; if ( $lastv eq $v ) { print ", $s"; } else { $lastv = $v; print "\n$v: $s"; }';
+	git for-each-ref --format='%(refname:short) %(creatordate:short)' refs/tags | grep -v 'v\.' | grep -Eo '[0-9]+\.[0-9]+.*' | sort -V | perl -ne '($v,$s,$date)=/(\d+\.\d+)(.*?) (\d{4}-\d{2}-\d{2})/; $s = "-" unless $s; if ( $lastv eq $v ) { print ", $s"; } else { $lastv = $v; print "\n[$date] $v: $s"; }'
+	echo;
 }
+# Alternative versions:
+# git tag | grep -Eo '[0-9]+\.[0-9]+.*' | sort -V -k1 | perl -ne 'BEGIN { $lastv=""; }  END { print "\n"; } chomp; ($v1,$v2,$s)=split "\\."; $v = "$v1.$v2"; $s = "-" if $s eq ""; if ( $lastv eq $v ) { print ", $s"; } else { $lastv = $v; print "\n$v: $s"; }'
+# git tag | plgrep '(\d+\.\d+)(.*)' '$1 $2' | sort -V -k1 | perl -ne 'BEGIN { $lastv=""; }  END { print "\n"; } ($v,$s)=split " ", $_; $s = "-" if $s eq ""; if ( $lastv eq $v ) { print ", $s"; } else { $lastv = $v; print "\n$v: $s"; }'
 
-# SVN deployment tools factored out to share around
-[ -f ~/development/cwt/scripts/SVNTools/trunk/svntools.sh ] &&
-	source ~/development/cwt/scripts/SVNTools/trunk/svntools.sh
+# Hunt for something in the logs of all the White Label servers, prepending appropriately
+# param 1: grep term; param 2: optional date (default today)
+wlgrep() { for ip in 192.168.202.{94,95,96,8}; do for site in Airport2Hotel Conxxe HolidayTaxis; do sssh $ip "zcat -f ~dev/apache/logs/$site/${2:-$(today)}.* | grep '$1'" | sed -e "s/^/$ip $site /"; done; done | sort -k6; }
+# Ditto, but for Web Services
+wsgrep() { for ip in 192.168.202.{92,97,93,5}; do for site in Conxxe HolidayTaxis; do sssh $ip "zcat -f ~dev/apache/logs/$site/${2:-$(today)}.* | grep '$1'; zcat -f /var/log/httpd/access_log* | grep '$1'" | sed -e "s/^/$ip $site /"; done; done | sort -k6; }
 
-[ -f ~dev/scripts/Robble/robble.sh ] &&
-	source ~dev/scripts/Robble/robble.sh
 
-# There's also some handy shell scripts in there
-[ -d ~/development/cwt/scripts/SVNTools/trunk/ ] &&
-	PATH=$PATH:~/development/cwt/scripts/SVNTools/trunk/
+# Remind me that I've stashed
+alias stash='git stash --include-untracked && warn stashed'
+alias unstash='git stash pop --index && nowarn stashed'
 
-# When SVNTools loads, it resets to live mode, so make sure we're consistent
-svnlive
+tasklist() {	
+	local base=${1:-master};
+	local compare=${2:-develop};
+	git fetch --prune origin --quiet;
+	git log  --first-parent  --pretty='format:%s' "origin/$base..origin/$compare" | perl -nE '
+		BEGIN {
+			sub sortuniq {
+				my %seen;
+				return sort grep { !$seen{$_}++ } @_; 
+			}
+			my @tasks,@reverts,@misc,@prs;
+		}
+		chomp; 
+		$line=$_; 
+		if ($line =~ /^Merge pull request #(\d+) from (.*)/) {
+			push @prs, $1;
+			$line=$2;
+		}
+		@t = split "/", $line; 
+		if ($t[$#t] =~ /^([A-Z0-9]{2,}-[0-9]+)/) { 
+			$key=$1; 
+			if($line =~ /revert/i) { 
+				push @reverts, $key; 
+			} else { 
+				push @tasks, $key; 
+			} 
+		} else { 
+			push @misc, $_; 
+		} 
+		END { 
+			@tasks=sortuniq @tasks;
+			@reverts=sortuniq @reverts;
+			@prs=sortuniq @prs;
+			@misc=sortuniq @misc;
 
+			say $#prs+1, " PRs" if (@prs);
+			say $#tasks+1, " TASKS: ", join ", ", @tasks if (@tasks);
+			say $#reverts+1, " REVERTS: ", join ", ", @reverts if (@reverts);
+			say $#misc+1, " OTHER: " if (@misc);
+			say "- ", join "\n- ", @misc if (@misc); 
+			say;
+			say "JIRA LINK:";
+			print "https://holidaytaxis.atlassian.net/issues/?jql=issueKey IN (", (join ",", @tasks), ")";
+			print " and issueKey NOT IN (", (join ",", @reverts), ")" if (@reverts);
+			say; 
+			say "GITHUB LINK:";
+			say "https://github.com/HolidayTaxis/htx/pulls?q=is:pr+", join "+", @prs;
+			say;
+		}
+	'
+}

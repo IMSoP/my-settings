@@ -2,3 +2,5 @@
 --type-set=tpl=.tpl
 --type-add=php=.inc
 --type-add=css=.less
+--type-add=css=.scss
+--ignore-dir=vendor

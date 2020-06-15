@@ -2,7 +2,7 @@ syntax enable
 
 " Enable mouse, and make it work under screen
 set mouse=a
-set ttymouse=xterm2
+""set ttymouse=xterm2
 " Don't auto-highlight matches from last search
 set nohlsearch
 " Enable modeline comments in files
@@ -33,6 +33,12 @@ set pastetoggle=<F2>
 augroup filetypedetect
 au BufNewFile,BufRead *.xt  setf xt
 augroup END
+
+" Allow editing crontabs called ".cron" or ".crontab"
+autocmd BufRead,BufNewFile *.cron,*.crontab set filetype=crontab
+
+" I don't write Modula2 code very often...
+autocmd BufRead,BufNewFile *.md set filetype=markdown
 
 "" Toggle function list
 "map <F6> :TlistToggle<CR>

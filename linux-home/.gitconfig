@@ -1,0 +1,30 @@
+[user]
+	email = tomminsr@holidaytaxis.com
+	name = Rowan Tommins
+[push]
+	default = current
+[alias]
+	alias = config --get-regexp alias
+	unstage = reset HEAD --
+	last = log -1 HEAD
+	sync = !git fetch --prune origin && git checkout develop && git pull --ff-only origin develop && composer install
+	ignore = update-index --assume-unchanged
+	ignore-ezy = !git checkout HEAD public/public/js/ezy/ezy{,.min}.js public/public/js/EZY/EZY{,.min}.js && git ignore public/public/js/ezy/ezy{,.min}.js public/public/js/EZY/EZY{,.min}.js
+	pwb = symbolic-ref --short HEAD
+	track = !git branch --set-upstream $(git pwb) origin/$(git pwb)
+	tree = log --oneline --graph --pretty=format:'%Cred%h%Creset %C(yellow)%d%Creset %s' --color
+	tree-all = log --oneline --graph --pretty=format:'%Cred%h%Creset %C(yellow)%d%Creset %s' --branches --tags --color
+	spacemerge = merge -s recursive -X ignore-all-space
+	new = checkout -b
+	task = !git checkout -b rowant/task/$1 && echo
+	bug = !git checkout -b rowant/bug/$1 && echo
+	scratch = !git checkout -b rowant/scratch/$1 && echo
+	log-merges = log --first-parent  --pretty='format:%h <- %p %s'
+	pr = !git fetch origin pull/$1/head && git checkout FETCH_HEAD && echo Checked out PR
+	ff = pull --ff-only
+[merge]
+	conflictstyle = diff3
+[diff]
+	renames = copies
+[foo]
+	bar = baz
