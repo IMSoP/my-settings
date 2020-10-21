@@ -701,7 +701,7 @@ git-back() {
 export XDEBUG_CONFIG="default_enable=1 remote_enable=1 remote_port=9042 remote_connect_back=0 remote_autostart=1 remote_host=localhost"
 
 
-export htxdata=/home/dev/public/HTX/HTXSymLink/HolidayTaxisData
+export htxdata=/home/dev/public/HTX/HolidayTaxisData
 
 unit-test() {
 	local suite=${1:-*};
