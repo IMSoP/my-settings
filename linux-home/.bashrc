@@ -43,6 +43,9 @@ FMT_RESET="$(tput sgr0)"
 __update_prompt() {
 	local RET=$?
 
+	# Update Window / Tab title
+	echo -ne "\033]0;$(whoami)@$(hostname)\a" 
+
 	local git_branch=''
 	if [ "$(git rev-parse --is-inside-work-tree 2> /dev/null)" = "true" ];
 	then
@@ -55,29 +58,31 @@ __update_prompt() {
 		git_branch="$( git symbolic-ref --quiet --short HEAD 2> /dev/null || git describe --all --exact-match HEAD 2> /dev/null || git rev-parse --short HEAD 2> /dev/null || echo '?' )"
 	fi
 	
-	export PS1='$(RET=$?; if [ $RET == 0 ]; then echo "\[\033[1;30m\]$RET"; else echo "\[\033[0;31m\]$RET"; fi;) \[\033[1;32m\]\u@\h $(if [ "$PSWARN" ]; then echo "\[\033[1;31m\]$PSWARN"; fi;)\[\033[1;34m\]\w $(if [ \j != 0 ]; then echo "\[\033[0;33m\]\j \[\033[1;34m\]"; fi;)\$$(if [ $TERM = "screen" ]; then echo \$; fi;)\[\033[00m\] '
+# 	export PS1='$(RET=$?; if [ $RET == 0 ]; then echo "\[\033[1;30m\]$RET"; else echo "\[\033[0;31m\]$RET"; fi;) \[\033[1;32m\]\u@\h $(if [ "$PSWARN" ]; then echo "\[\033[1;31m\]$PSWARN"; fi;)\[\033[1;34m\]\w $(if [ \j != 0 ]; then echo "\[\033[0;33m\]\j \[\033[1;34m\]"; fi;)\$$(if [ $TERM = "screen" ]; then echo \$; fi;)\[\033[00m\] '
 
-# 	PS1="$FMT_BRIGHT$FMT_GREEN\u@\h$FMT_RESET"
-# 	if [ $RET == 0 ];
-# 	then 
-# 		PS1="$FMT_BRIGHT$FMT_BLACK$RET$FMT_RESET $PS1"
-# 	else
-# 		PS1="$FMT_RED$RET$FMT_RESET $PS1"
-# 	fi
-# 	if [ "$PSWARN" ];
-# 	then
-# 		PS1="$PS1 $FMT_BRIGHT$FMT_RED$PSWARN$FMT_RESET"
-# 	else
-# 		PS1="$PS1 "
-# 	fi
-# 	PS1="$PS1$FMT_BRIGHT$FMT_BLUE\w$FMT_RESET"
-# 	if [ "$git_branch" ];
-# 	then
-# 		PS1="$PS1 $FMT_BRIGHT$FMT_BLACK$git_branch$FMT_RESET"
-# 	fi
-# 	# This one is inlined in PS1 to get access to the \j magic for number of jobs
-# 	PS1="$PS1\$(if [ \j != 0 ]; then echo \" $FMT_YELLOW\j$FMT_RESET\"; fi)"
-# 	PS1="$PS1 $FMT_BRIGHT$FMT_BLUE\$$FMT_RESET "
+	local prompt="\[\033[1;32m\]\u@\h\[\033[00m\]"
+  	if [ $RET == 0 ];
+  	then 
+  		prompt="\[\033[1;30m\]$RET\[\033[00m\] $prompt"
+  	else
+  		prompt="\[\033[0;31m\]$RET\[\033[00m\] $prompt"
+  	fi
+  	if [ "$PSWARN" ];
+  	then
+  		prompt="$prompt \[\033[1;31m\]$PSWARN\[\033[00m\]"
+  	fi
+  	prompt="$prompt \[\033[1;34m\]\w\[\033[00m\]"
+  	if [ "$git_branch" ];
+  	then
+  		prompt="$prompt \[\033[1;30m\]$git_branch\[\033[00m\]"
+  	fi
+
+  	# This one is inlined in prompt to get access to the \j magic for number of jobs
+  	prompt="$prompt\$(if [ \j != 0 ]; then echo \" \[\033[0;33m\]\j\[\033[00m\]\"; fi)"
+
+  	prompt="$prompt \[\033[1;34m\]\$\[\033[00m\] "
+ 
+	export PS1="$prompt"
 }
 
 #
@@ -688,12 +693,12 @@ alias gds='git diff --staged'
 alias ga='git add'
 gf() { git fetch --prune ${1:-origin}; }
 git-hist() {
-        git reflog | perl -nE '/checkout: moving from ([^ ]+)/ && say ++$x, ": ", $1;' | les
+	git reflog | perl -nE '/checkout: moving from ([^ ]+)/ && say ++$x, ": ", $1;' | les
 }
 git-back() {
-        local steps=${1:-1}
-        local branch=$(git reflog | perl -nE '/checkout: moving from ([^ ]+)/ && say $1;' | head -n $steps | tail -n 1)
-        git checkout $branch
+	local steps=${1:-1}
+	local branch=$(git reflog | perl -nE '/checkout: moving from ([^ ]+)/ && say $1;' | head -n $steps | tail -n 1)
+	git checkout $branch
 }
 
 # Enable XDebug for CLI scripts!
