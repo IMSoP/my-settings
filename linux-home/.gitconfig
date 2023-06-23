@@ -13,23 +13,31 @@
         ignore = update-index --assume-unchanged
         ignore-ezy = !git checkout HEAD public/public/js/ezy/ezy{,.min}.js public/public/js/EZY/EZY{,.min}.js && git ignore public/public/js/ezy/ezy{,.min}.js public/public/js/EZY/EZY{,.min}.js
         pwb = symbolic-ref --short HEAD
-        track = !git branch --set-upstream $(git pwb) origin/$(git pwb)
         tree = log --oneline --graph --pretty=format:'%Cred%h%Creset %C(yellow)%d%Creset %s' --color
         tree-all = log --oneline --graph --pretty=format:'%Cred%h%Creset %C(yellow)%d%Creset %s' --branches --tags --color
         spacemerge = merge -s recursive -X ignore-all-space
         new = checkout -b
-        task = !git checkout -b rowant/task/$1 && echo
         bug = !git checkout -b rowant/bug/$1 && echo
         scratch = !git checkout -b rowant/scratch/$1 && echo
+        feature = !git checkout -b rowant/feature/$1 && echo
         log-merges = log --first-parent  --pretty='format:%h <- %p %s'
-        pr = !git fetch origin pull/$1/head && git checkout FETCH_HEAD && echo Checked out PR
+        pr = !git fetch origin pull/$1/head && git checkout FETCH_HEAD && echo Checked out head of PR
+        prm = !git fetch origin pull/$1/merge && git checkout FETCH_HEAD && echo Checked out merge of PR 
+	prm-web = "!git fetch origin pull/$1/merge && cat .git/FETCH_HEAD | awk '{sub(/github.com:/, \"\", $4); print \"https://github.com/\" $4 \"/commit/\" $1}' && echo 'Use above link to view merge for PR'"
         ff = pull --ff-only
-	upstream = !git branch --set-upstream-to=origin/$(git pwb)
+        track = !git branch --set-upstream-to=${1:-origin}/$(git pwb) && >/dev/null echo
+	upstream = track
 	force = push --force-with-lease
+	# task = !owner=rowant && task="$1" && parent="${2:-develop}" && git fetch origin "$parent" && git checkout --no-track -b "$owner/$parent/$task" "origin/$parent" && true
+	task = "!owner=rowant && task=$1 && parent=${2:-develop} && short_parent=${parent##*/} && git fetch origin $parent && git checkout --no-track -b $owner/$short_parent/$task origin/$parent && true"
 [merge]
         conflictstyle = diff3
+[rebase]
+	autosquash = true
 [diff]
         renames = copies
 
 [pull]
 	rebase = false
+[rerere]
+	enabled = true

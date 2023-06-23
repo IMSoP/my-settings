@@ -4,3 +4,4 @@
 --type-add=css=.less
 --type-add=css=.scss
 --ignore-dir=vendor
+--ignore-dir=.idea
