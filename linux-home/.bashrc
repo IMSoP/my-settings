@@ -805,4 +805,5 @@ tasklist() {
 alias composer74='php7.4 $(which composer) '
 alias composer80='php8.0 $(which composer) '
 alias composer81='php8.1 $(which composer) '
+alias composer82='php8.2 $(which composer) '
 alias composer-self-update='sudo $(which composer) self-update'
