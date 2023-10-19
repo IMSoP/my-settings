@@ -1,0 +1,2 @@
+Quick Setup:
+curl 'https://raw.githubusercontent.com/IMSoP/my-settings/htx/setup.sh' | bash
