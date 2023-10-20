@@ -8,7 +8,7 @@ do
         ls -l ~/$file
     elif [ -f ~/$file ]
     then
-        mv --backup=numbered $file $file.backup
+        mv --backup=numbered ~/$file ~/$file.backup
 	ln -s ~/my-settings/linux-home/$file ~/$file
     else
 	ln -s ~/my-settings/linux-home/$file ~/$file
