@@ -40,11 +40,22 @@ FMT_UNDERLINE="$(tput sgr 0 1)"
 FMT_INVERT="$(tput sgr 1 0)"
 FMT_RESET="$(tput sgr0)"
 
+if [ -e /usr/local/bin/aws ] && [ -f /var/lib/cloud/data/instance-id ]; then
+	EC2_INSTANCE_NAME="$(/usr/local/bin/aws ec2 describe-tags \
+		--filters "Name=resource-id,Values=$(</var/lib/cloud/data/instance-id)" \
+		--query "Tags[?Key=='Name'].Value" \
+		--output text \
+	)"
+fi
+
 __update_prompt() {
 	local RET=$?
 
+	# Prefer EC2 name over local hostname where available
+	local short_host="${EC2_INSTANCE_NAME:-$(hostname)}"
+
 	# Update Window / Tab title
-	echo -ne "\033]0;$(whoami)@$(hostname)\a" 
+	echo -ne "\033]0;$(whoami)@${short_host}\a" 
 
 	local git_branch=''
 	if [ "$(git rev-parse --is-inside-work-tree 2> /dev/null)" = "true" ];
@@ -60,7 +71,7 @@ __update_prompt() {
 	
 # 	export PS1='$(RET=$?; if [ $RET == 0 ]; then echo "\[\033[1;30m\]$RET"; else echo "\[\033[0;31m\]$RET"; fi;) \[\033[1;32m\]\u@\h $(if [ "$PSWARN" ]; then echo "\[\033[1;31m\]$PSWARN"; fi;)\[\033[1;34m\]\w $(if [ \j != 0 ]; then echo "\[\033[0;33m\]\j \[\033[1;34m\]"; fi;)\$$(if [ $TERM = "screen" ]; then echo \$; fi;)\[\033[00m\] '
 
-	local prompt="\[\033[1;32m\]\u@\h\[\033[00m\]"
+	local prompt="\[\033[1;32m\]\u@${short_host}\[\033[00m\]"
   	if [ $RET == 0 ];
   	then 
   		prompt="\[\033[1;30m\]$RET\[\033[00m\] $prompt"
