@@ -161,6 +161,7 @@ sssh() { ssh -o 'UserKnownHostsFile /dev/null' -o 'StrictHostKeyChecking no' -o 
 # I'm always editting and reloading this file
 alias confedit='vi ~/.bashrc'
 alias confload='. ~/.bashrc'
+alias confpull='pushd ~/my-settings &> /dev/null; git ff; popd &> /dev/null; confload '
 
 # Keep config up to date on all servers
 sync_config()
