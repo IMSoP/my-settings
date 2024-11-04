@@ -819,3 +819,22 @@ alias composer80='php8.0 $(which composer) '
 alias composer81='php8.1 $(which composer) '
 alias composer82='php8.2 $(which composer) '
 alias composer-self-update='sudo $(which composer) self-update'
+
+# From https://intranet.holidaytaxis.com/wiki/Useful_Git_commands
+find_deleted() {
+    # Paste this function definition into a terminal, or add to your .bashrc to load on each login
+    # Then, inside a git repo, run "find_deleted foo" to find commits which deleted files with "foo" in their path
+    local pattern="$1"
+    # First, we search the logs for all commits with deleted files (--diff-filter=D)
+    #   and output a one-line "header" (formatted with "--pretty")
+    #   plus the names of the files deleted (with --name-status)
+    # Then, the sed script looks at each line:
+    #   if it begins with "D" (for "Deleted") and matches the pattern, add it to the "hold buffer" (H)
+    #   if it begins with "==" (our header line), then start a new "hold buffer" with that line (x),
+    #     and print the old "hold buffer" if it contains our pattern (p)
+    git log --diff-filter=D --pretty='%n== %as | %h | %aN | %s ==' --name-status \
+      | sed -ne "
+        /^D.*$pattern/I { H }
+        /^==/ { x; /\nD.*$pattern/I p }
+      "
+}
