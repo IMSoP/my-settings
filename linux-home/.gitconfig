@@ -29,7 +29,7 @@
 	upstream = track
 	force = push --force-with-lease
 	# task = !owner=rowant && task="$1" && parent="${2:-develop}" && git fetch origin "$parent" && git checkout --no-track -b "$owner/$parent/$task" "origin/$parent" && true
-	task = "!owner=rowant && task=$1 && parent=${2:-develop} && short_parent=${parent##*/} && git fetch origin $parent && git checkout --no-track -b $owner/$short_parent/$task origin/$parent && true"
+	task = "!owner=rowant && task=$1 && default_parent=$(git rev-parse --abbrev-ref origin/HEAD | sed 's/origin.//') && parent=${2:-$default_parent} && short_parent=${parent##*/} && git fetch origin $parent && git checkout --no-track -b $owner/$short_parent/$task origin/$parent && true"
 [merge]
         conflictstyle = diff3
 [rebase]
