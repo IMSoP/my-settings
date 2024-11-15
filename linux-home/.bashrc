@@ -40,8 +40,8 @@ FMT_UNDERLINE="$(tput sgr 0 1)"
 FMT_INVERT="$(tput sgr 1 0)"
 FMT_RESET="$(tput sgr0)"
 
-if [ -e /usr/local/bin/aws ] && [ -f /var/lib/cloud/data/instance-id ]; then
-	EC2_INSTANCE_NAME="$(/usr/local/bin/aws ec2 describe-tags \
+if [ -e $(which aws) ] && [ -f /var/lib/cloud/data/instance-id ]; then
+	EC2_INSTANCE_NAME="$(aws ec2 describe-tags \
 		--filters "Name=resource-id,Values=$(</var/lib/cloud/data/instance-id)" \
 		--query "Tags[?Key=='Name'].Value" \
 		--output text \
